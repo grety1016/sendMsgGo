@@ -3,7 +3,8 @@ package mssql
 import (
 	"database/sql"
 	"fmt"
-	"sendmsg/logger"
+	"os"
+	"sendMsgGo/logger"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,11 +17,11 @@ import (
 
 // 数据库连接和连接池的配置参数
 type DBConfig struct {
-	ConnString      string        // 数据库连接字符串，用于指定数据库连接的具体信息
-	MaxOpenConns    int           // 最大打开连接数，控制连接池中允许打开的最大数据库连接数
-	MaxIdleConns    int           // 最大空闲连接数，控制连接池中保持空闲的最大数据库连接数
-	ConnMaxLifetime time.Duration // 连接最大生命周期，控制连接池中连接的最长生命周期
-	ConnMaxIdleTime time.Duration // 连接最大空闲时间，控制连接池中连接的最大空闲时间
+	connString      string        // 数据库连接字符串，用于指定数据库连接的具体信息
+	maxOpenConns    int           // 最大打开连接数，控制连接池中允许打开的最大数据库连接数
+	maxIdleConns    int           // 最大空闲连接数，控制连接池中保持空闲的最大数据库连接数
+	connMaxLifetime time.Duration // 连接最大生命周期，控制连接池中连接的最长生命周期
+	connMaxIdleTime time.Duration // 连接最大空闲时间，控制连接池中连接的最大空闲时间
 }
 
 // AsyncResult 包装 SQL(ExecuteAsync\ExecuteAsyncNoTx) 执行结果
@@ -44,9 +45,19 @@ type TxWrapper struct {
 	txCount     int32
 }
 
+func SetDBConfig(connString string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration, connMaxIdleTime time.Duration) DBConfig {
+	return DBConfig{
+		connString:      os.Getenv(connString),
+		maxOpenConns:    maxOpenConns,
+		maxIdleConns:    maxIdleConns,
+		connMaxLifetime: connMaxLifetime,
+		connMaxIdleTime: connMaxIdleTime,
+	}
+}
+
 // 初始化数据库连接并配置连接池参数
 func InitDB(config DBConfig) (*DBWrapper, error) {
-	db, err := sqlx.Open("sqlserver", config.ConnString)
+	db, err := sqlx.Open("sqlserver", config.connString)
 	if err != nil {
 		logrus.Errorf("Error opening database: %v", err)
 		return nil, err
@@ -64,15 +75,15 @@ func InitDB(config DBConfig) (*DBWrapper, error) {
 	}
 
 	// 配置连接池参数
-	db.SetMaxOpenConns(config.MaxOpenConns)
-	db.SetMaxIdleConns(config.MaxIdleConns)
-	db.SetConnMaxLifetime(config.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(config.ConnMaxIdleTime)
+	db.SetMaxOpenConns(config.maxOpenConns)
+	db.SetMaxIdleConns(config.maxIdleConns)
+	db.SetConnMaxLifetime(config.connMaxLifetime)
+	db.SetConnMaxIdleTime(config.connMaxIdleTime)
 
 	// 创建 DBWrapper 并设置数据库名称
 	dbWrapper := &DBWrapper{
 		db:     db,
-		dbName: GetDatabaseName(config.ConnString),
+		dbName: GetDatabaseName(config.connString),
 	}
 
 	return dbWrapper, nil
@@ -278,6 +289,7 @@ func (dbWrapper *DBWrapper) ExecSQL(query string, args interface{}) (int64, erro
 }
 
 // Exec 函数用于执行任意 SQL 语句，包括插入、更新和删除操作，仅支持(插入Insert)批量操作(非事务版本)
+// Exec 函数用于执行任意 SQL 语句，包括插入、更新和删除操作，仅支持(插入Insert)批量操作(非事务版本)
 func exec(exec Execer, query string, args interface{}) (int64, error) {
 	dbName := exec.DBName()
 
@@ -329,6 +341,7 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 	// 记录开始执行操作
 	start := time.Now()
 	// 开启事务
+	logrus.Infof("[DB] @%s - executing, sql: ExecSQLWithTran { Begin transaction }", dbWrapper.dbName)
 	tx, err := dbWrapper.db.Beginx()
 	elapsedMillis := time.Since(start).Milliseconds()
 	logrus.Infof("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
@@ -356,6 +369,7 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 				logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Failed to commit, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 			}
 			elapsedMillis = time.Since(start).Milliseconds()
+			logrus.Infof("[DB] @%s - executing, sql: ExecSQLWithTran { Commit transaction }", dbWrapper.dbName)
 			logrus.Infof("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Transaction committed successfully }", dbWrapper.dbName, elapsedMillis)
 		}
 	}()
@@ -797,7 +811,7 @@ func (txWrapper *TxWrapper) ColumnExists(tableName string, columnName string) (b
 func tableExists(exec Execer, tableName string) (bool, error) {
 	var exists bool
 	dbName := exec.DBName()
-	logrus.Infof("[DB] @%s - executing, sql: TableExists { TableExists? }", dbName)
+	logrus.Infof("[DB] @%s - executing, sql: TableExists { Table [ %s ] Exists? }", dbName, tableName)
 
 	query := "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @p1"
 	start := time.Now() // 执行开始时间
@@ -808,7 +822,7 @@ func tableExists(exec Execer, tableName string) (bool, error) {
 		return false, fmt.Errorf("failed to check if table exists: %w", err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: TableExists { TableExists: %v }", dbName, elapsedMillis, exists)
+	logrus.Infof("[DB] @%s - executed:%dms, sql: TableExists { Table [ %s ] exists: %v }", dbName, elapsedMillis, tableName, exists)
 
 	return exists, nil
 }
@@ -817,12 +831,12 @@ func tableExists(exec Execer, tableName string) (bool, error) {
 func columnExists(exec Execer, tableName string, columnName string) (bool, error) {
 	var exists bool
 	dbName := exec.DBName()
-	logrus.Infof("[DB] @%s - executing, sql: ColumnExists { ColumnExists? }", dbName)
 	query := `
         SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = @p1 AND COLUMN_NAME = @p2
     `
+	logrus.Infof("[DB] @%s - executing, sql: columnExists { Table [ %s ] exists column [ %s ]? }", dbName, tableName, columnName)
 	start := time.Now() // 执行开始时间
 	err := exec.QueryRowx(query, tableName, columnName).Scan(&exists)
 	if err != nil {
@@ -831,7 +845,7 @@ func columnExists(exec Execer, tableName string, columnName string) (bool, error
 		return false, fmt.Errorf("failed to check if column exists: %w", err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: ColumnExists { ColumnExists: %v }", dbName, elapsedMillis, exists)
+	logrus.Infof("[DB] @%s - executed:%dms, sql: ColumnExists { Table [ %s ] exists column [ %s ]: %v }", dbName, elapsedMillis, tableName, columnName, exists)
 	return exists, nil
 }
 
@@ -861,10 +875,10 @@ func lockExists(execer Execer, tableName string) (bool, error) {
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
 		logrus.Errorf("[DB] @%s - executed:%dms, sql: LockExists { Failed to check if table %s is locked, Error: %v }", dbName, elapsedMillis, tableName, err)
-		return false, fmt.Errorf("failed to check if table [%s] is locked: %w", tableName, err)
+		return false, fmt.Errorf("failed to check if table [ %s ] is locked: %w", tableName, err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: LockExists { Table [%s] locked is: %v }", dbName, elapsedMillis, tableName, exists)
+	logrus.Infof("[DB] @%s - executed:%dms, sql: LockExists { Table [ %s ] locked is: %v }", dbName, elapsedMillis, tableName, exists)
 	return exists, nil
 }
 

@@ -11,7 +11,7 @@ import (
 	// "github.com/jmoiron/sqlx"
 
 	// "sendmsg/middleware"
-	"sendmsg/mssql"
+	"sendMsgGo/mssql"
 
 	"github.com/sirupsen/logrus"
 	// "github.com/gin-gonic/gin"
@@ -41,13 +41,8 @@ type DBConfig = mssql.DBConfig
 
 func SqlxDemo() {
 	// 配置参数
-	dbConfig := mssql.DBConfig{
-		ConnString:      "server=47.103.31.8;port=1433;user id=kxs_dev;password=kephi;database=Kxs_Interface;encrypt=true;trustServerCertificate=true;connection timeout=30;application name=sendmsg;",
-		MaxOpenConns:    100,
-		MaxIdleConns:    60,
-		ConnMaxLifetime: 60 * time.Minute,
-		ConnMaxIdleTime: 15 * time.Minute,
-	}
+	dbConfig := mssql.SetDBConfig("DB_CONN_STRING", 100, 20, 60*time.Minute, 15*time.Minute)
+
 	// 初始化数据库连接
 	db, err := mssql.InitDB(dbConfig)
 	//判断初始化数据库连接池是否成功
@@ -142,14 +137,25 @@ func SqlxDemo() {
 	} else {
 		fmt.Printf("ExecSQL插入数据成功,影响行数: %d\n", rows)
 	}
+
 	// 匿名map插入数据(多条)ExecSql
 	if rows, err := db.ExecSQL("INSERT INTO go_table (id,name) VALUES (:id,:name)", usermaps); err != nil {
 		fmt.Printf("ExecSQL插入数据时出错: %v\n", err)
 	} else {
 		fmt.Printf("ExecSQL插入数据成功,影响行数: %d\n", rows)
 	}
+	if rows, err := db.ExecSQL("SELECT @@VERSION", nil); err != nil {
+		fmt.Printf("ExecSQL插入数据时出错: %v\n", err)
+	} else {
+		fmt.Printf("ExecSQL插入数据成功,影响行数: %d\n", rows)
+	}
 	// 结构体插入数据(单条)ExecSql
 	if rows, err := db.ExecSQL("INSERT INTO go_table (id,name) VALUES (:id,:name)", id); err != nil {
+		fmt.Printf("ExecSQL插入数据时出错: %v\n", err)
+	} else {
+		fmt.Printf("ExecSQL插入数据成功,影响行数: %d\n", rows)
+	}
+	if rows, err := db.ExecSQLWithTran("SELECT @@VERSION", nil); err != nil {
 		fmt.Printf("ExecSQL插入数据时出错: %v\n", err)
 	} else {
 		fmt.Printf("ExecSQL插入数据成功,影响行数: %d\n", rows)

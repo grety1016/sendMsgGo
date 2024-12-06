@@ -1,6 +1,8 @@
-module sendmsg
+module sendMsgGo
 
 go 1.23.1
+
+replace github.com/denisenkom/go-mssqldb => ./go-mssqldb
 
 require (
 	github.com/denisenkom/go-mssqldb v0.12.3

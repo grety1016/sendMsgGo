@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"sendmsg/logger"
+	"sendMsgGo/logger"
 
 	"github.com/gin-gonic/gin"
 )
