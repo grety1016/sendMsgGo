@@ -5,6 +5,7 @@ import (
 
 	"sendMsgGo/logger"
 	"sendMsgGo/mssql"
+	// "sendMsgGo/eventful"
 
 	// "sendMsgGo/mssql/mssqldemo"
 
@@ -16,6 +17,8 @@ type DBConfig = mssql.DBConfig
 
 func main() {
 	logger.Init()
+
+	// eventful.EventDemo() // 测试event的例子
 
 	// mssqldemo.SqlxDemo() // 测试mssql的例子
 
@@ -33,5 +36,6 @@ func main() {
 			logrus.Errorf("[DB] @%s - Failed to close database: %v }", db.GetDBName(), err)
 		}
 	}()
- 
+
+	 
 }

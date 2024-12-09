@@ -201,6 +201,7 @@ func SqlxDemo() {
 	}
 
 	tx.Commit() //提交事务
+
 	// 下面测试使用独立事务开启，暂存点，自动回滚
 	if result, err := db.BeginTranAutoCommit(func(tx *TxWrapper) (int64, error) {
 		row, err := tx.ExecSQL("INSERT INTO go_table (id, name) VALUES (:id, :name)", id)
@@ -317,5 +318,27 @@ func SqlxDemo() {
 		} else {
 			fmt.Printf("locks exist: %v\n", exist)
 		}
+	}
+
+	results = db.ExecuteAsyncNoTx(func() AsyncResult {
+		// 查询结果集并映射结构体
+		var users []User
+		if err := db.QueryCollect(&users, "SELECT userid,username FROM sendMsg_users where userid <= @userid",
+			sql.Named("userid", 308)); err != nil {
+			fmt.Printf("[QueryValue]查询用户ID时出错: %v\n", err)
+		} else {
+			fmt.Printf("[QueryValue]获取到的用户列表为: %v\n", users)
+		}
+
+		return AsyncResult{QueryResult: users}
+
+	})
+
+	// 直接读取结果而不使用遍历
+	result = <-results
+	if result.Error != nil {
+		fmt.Printf("Error executing transaction: %v\n", result.Error)
+	} else {
+		fmt.Printf("Rows affected2: %+v\n", result.QueryResult)
 	}
 }

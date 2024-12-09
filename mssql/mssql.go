@@ -41,8 +41,8 @@ type DBWrapper struct {
 type TxWrapper struct {
 	tx          *sqlx.Tx
 	dbWrapper   *DBWrapper
-	isCommitted int32
-	txCount     int32
+	isCommitted int32 // 0:未提交，1:已提交
+	txCount     int32 // 事务计数器
 }
 
 func SetDBConfig(connString string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration, connMaxIdleTime time.Duration) DBConfig {
@@ -797,16 +797,6 @@ func (txWrapper *TxWrapper) TableExists(tableName string) (bool, error) {
 	return tableExists(txWrapper, tableName)
 }
 
-// TableExists 检查指定的表是否存在
-func (dbWrapper *DBWrapper) ColumnExists(tableName string, columnName string) (bool, error) {
-	return columnExists(dbWrapper, tableName, columnName)
-}
-
-// TableExists 检查指定的表是否存在
-func (txWrapper *TxWrapper) ColumnExists(tableName string, columnName string) (bool, error) {
-	return columnExists(txWrapper, tableName, columnName)
-}
-
 // tableExists 检查指定的表是否存在
 func tableExists(exec Execer, tableName string) (bool, error) {
 	var exists bool
@@ -825,6 +815,16 @@ func tableExists(exec Execer, tableName string) (bool, error) {
 	logrus.Infof("[DB] @%s - executed:%dms, sql: TableExists { Table [ %s ] exists: %v }", dbName, elapsedMillis, tableName, exists)
 
 	return exists, nil
+}
+
+// TableExists 检查指定的表是否存在
+func (dbWrapper *DBWrapper) ColumnExists(tableName string, columnName string) (bool, error) {
+	return columnExists(dbWrapper, tableName, columnName)
+}
+
+// TableExists 检查指定的表是否存在
+func (txWrapper *TxWrapper) ColumnExists(tableName string, columnName string) (bool, error) {
+	return columnExists(txWrapper, tableName, columnName)
 }
 
 // columnExists 检查指定表中的字段是否存在
