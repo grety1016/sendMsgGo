@@ -12,8 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// #region 日志中间件
-// HttpLogger 定义自定义日志格式的中间件
+// #region日志中间件
 func HttpLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 初始化Http日志
@@ -63,6 +62,14 @@ func HttpLogger() gin.HandlerFunc {
 			Error = "None"
 		}
 
+		//请求URL如果没有查询参数，则不显示"/"符号
+		var sign string
+		if c.Request.URL.RawQuery == "" {
+			sign = ""
+		} else {
+			sign = "/"
+		}
+
 		// 自定义日志格式
 		str := fmt.Sprintf(
 			"[Gin] | %s | %d | %4.2vms | %+v | %s | Errors: %s",
@@ -70,7 +77,7 @@ func HttpLogger() gin.HandlerFunc {
 			c.Writer.Status(),
 			latency,
 			c.Request.Method,
-			c.Request.URL.Path+"/"+c.Request.URL.RawQuery,
+			c.Request.URL.Path+sign+c.Request.URL.RawQuery,
 			Error,
 		)
 		logger.Info(str)
