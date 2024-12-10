@@ -6,5 +6,6 @@
     "go.inlayHints.functionTypeParameters": true,
     "go.inlayHints.rangeVariableTypes": true,
     "rust-analyzer.inlayHints.bindingModeHints.enable": true,
-    "rust-analyzer.inlayHints.closureCaptureHints.enable": true
+    "rust-analyzer.inlayHints.closureCaptureHints.enable": true,
+    "gitlens.home.preview.enabled": false
 }
