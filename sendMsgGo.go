@@ -36,6 +36,7 @@ func main() {
 	router.Router(r) // 路由注册
 
 	r.Run(":3888") // 启动服务
+	
 
 	// eventful.EventDemo() // 测试event的例子
 
