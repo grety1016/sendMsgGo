@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-//#region SequentialObjectId
-
 type SequentialObjectId struct {
 	Timestamp uint32
 	PID       *uint16
@@ -139,5 +137,3 @@ func Demo() {
 	}
 	fmt.Printf("id2: %s\n", s2)
 }
-
-//#endregion SequentialObjectId

@@ -11,8 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-// #region日志中间件
+ 
 func HttpLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 初始化Http日志
@@ -107,5 +106,4 @@ func DBMiddleware(db *DB) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-// #endregion 数据库中间件
+ 
