@@ -11,11 +11,13 @@ import (
 	// "github.com/jmoiron/sqlx"
 
 	// "sendmsg/middleware"
-	"sendMsgGo/mssql"
+	"sendmsggo/mssql"
 
 	"github.com/sirupsen/logrus"
 	// "github.com/gin-gonic/gin"
 )
+
+//#region mssqldemo
 
 // 如下函数用于测试sqlx的使用
 type UserParams struct {
@@ -342,3 +344,5 @@ func SqlxDemo() {
 		fmt.Printf("Rows affected2: %+v\n", result.QueryResult)
 	}
 }
+
+//#endregion mssqldemo

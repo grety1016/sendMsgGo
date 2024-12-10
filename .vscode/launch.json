@@ -6,7 +6,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "F:/GoProject/src/sendmsg"
+            "program": "${workspaceFolder}/sendmsggo.go"
         }
     ]
 }

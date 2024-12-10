@@ -1,4 +1,4 @@
-module sendMsgGo
+module sendmsggo
 
 go 1.23.1
 

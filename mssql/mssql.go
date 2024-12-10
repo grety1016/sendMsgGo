@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"sendMsgGo/logger"
+	"sendmsggo/logger"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +14,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
+
+//#region mssql
 
 // 数据库连接和连接池的配置参数
 type DBConfig struct {
@@ -883,3 +885,4 @@ func lockExists(execer Execer, tableName string) (bool, error) {
 // FIXME：表示代码中存在已知的错误，需要修复。
 // TODO：表示代码中存在未完成的工作，需要完成。
 // *如下函数由于SQLX不支持超时取消，所以暂时不使用(仅能取消本地任务执行，但已经发送的查询请求仍然会继续执行)
+//#endregion mssql

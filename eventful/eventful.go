@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+//#region 事件驱动包
+
 // 事件分发器
 type Eventful struct {
 	nextId      uint64
@@ -83,3 +85,5 @@ func EventDemo() {
 	// 再次发布自定义消息，确保订阅者已取消
 	eventful.Publish(customTopic, CustomMessage{Content: "Goodbye, World!", Code: 404})
 }
+
+//#endregion 事件驱动包

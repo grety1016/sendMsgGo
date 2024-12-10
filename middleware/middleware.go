@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 
-	"sendMsgGo/logger"
-	"sendMsgGo/mssql"
+	"sendmsggo/logger"
+	"sendmsggo/mssql"
 
 	"github.com/gin-gonic/gin"
 )
 
+// #region 日志中间件
 // HttpLogger 定义自定义日志格式的中间件
 func HttpLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//初始化Http日志
-		logger := logger.InitHTTPLogger() //独立日志与DB日志区分
+		// 初始化Http日志
+		logger := logger.InitHTTPLogger() // 独立日志与DB日志区分
 
 		// 记录请求体
 		var requestBody []byte
@@ -35,33 +37,15 @@ func HttpLogger() gin.HandlerFunc {
 		// 记录响应体
 		writer := &responseBodyWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 		c.Writer = writer
-		// logrus.Infof("[DB] @%s - executing, sql: Query { sql: \"%s\", Params: [%v] }")
 
-		str := fmt.Sprintf("[Client] IP: [%s] -[%+v]", c.ClientIP(), c.Request.Method)
-		logger.Info(str)
-
-		// 自定义日志格式
-		// _logFormat := fmt.Sprintf("%s - [%s] \"%s %s %s\" %d %s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
-		// 	c.ClientIP(),
-		// 	start.Format(time.RFC3339Nano),
-		// 	c.Request.Method,
-		// 	c.Request.URL.Path,
-		// 	c.Request.Proto,
-		// 	c.Writer.Status(),
-		// 	latency,
-		// 	c.Request.UserAgent(),
-		// 	string(requestBody),
-		// 	requestHeaders,
-		// 	writer.body.String(),
-		// 	responseHeaders,
-		// 	c.Errors.ByType(gin.ErrorTypePrivate).String(),
-		// )
+		// 记录请求开始时间
+		start := time.Now()
 
 		// 处理请求
 		c.Next()
 
 		// 记录响应时间
-		// latency := time.Since(start)
+		latency := time.Since(start)
 
 		// 记录响应头
 		responseHeaders := ""
@@ -71,6 +55,25 @@ func HttpLogger() gin.HandlerFunc {
 			}
 		}
 
+		var Error string
+		// 记录错误信息
+		if len(c.Errors) > 0 {
+			Error = c.Errors.ByType(gin.ErrorTypePrivate).String()
+		} else {
+			Error = "None"
+		}
+
+		// 自定义日志格式
+		str := fmt.Sprintf(
+			"[Gin] | %s | %d | %4.2vms | %+v | %s | Errors: %s",
+			c.ClientIP(),
+			c.Writer.Status(),
+			latency,
+			c.Request.Method,
+			c.Request.URL.Path+"/"+c.Request.URL.RawQuery,
+			Error,
+		)
+		logger.Info(str)
 	}
 }
 
@@ -85,12 +88,17 @@ func (r *responseBodyWriter) Write(b []byte) (int, error) {
 	return r.ResponseWriter.Write(b)
 }
 
-type DB = mssql.DBWrapper
-//数据库实例注入
+// #endregion 日志中间件
+
+// #region 数据库中间件
 // 中间件函数，将数据库连接注入到上下文中
+type DB = mssql.DBWrapper
+
 func DBMiddleware(db *DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("db", db)
 		c.Next()
 	}
 }
+
+// #endregion 数据库中间件

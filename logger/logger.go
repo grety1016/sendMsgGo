@@ -15,6 +15,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+//#region 日志记录包
+
 // DB 日志初始化
 var logOnce sync.Once
 
@@ -141,3 +143,5 @@ func InitHTTPLogger() *logrus.Logger {
 	})
 	return httpLogger
 }
+
+//#endregion 日志记录包
