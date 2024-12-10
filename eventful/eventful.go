@@ -11,7 +11,12 @@ type Eventful struct {
 	subscribers sync.Map
 }
 
-// 创建新的事件分发器
+type Toptic string
+
+// 构造函数
+func NewToptic(value string) Toptic { return Toptic(value) }
+
+// 初始化事件分发器
 func NewEventful() *Eventful {
 	return &Eventful{}
 }
@@ -19,12 +24,12 @@ func NewEventful() *Eventful {
 // 订阅者结构
 type Subscriber struct {
 	id      uint64
-	topic   string
+	topic   Toptic
 	handler func(interface{})
 }
 
 // 订阅事件
-func (e *Eventful) Subscribe(topic string, handler func(interface{})) uint64 {
+func (e *Eventful) Subscribe(topic Toptic, handler func(interface{})) uint64 {
 	subId := e.nextId
 	e.nextId++
 	sub := &Subscriber{id: subId, topic: topic, handler: handler}
@@ -37,8 +42,8 @@ func (e *Eventful) Unsubscribe(subId uint64) {
 	e.subscribers.Delete(subId)
 }
 
-// 发布消息
-func (e *Eventful) Publish(topic string, msg interface{}) {
+// 发布主题事件
+func (e *Eventful) Publish(topic Toptic, msg interface{}) {
 	e.subscribers.Range(func(key, value interface{}) bool {
 		sub := value.(*Subscriber)
 		if sub.topic == topic {
@@ -57,7 +62,7 @@ func EventDemo() {
 	eventful := NewEventful()
 
 	// 创建自定义主题
-	customTopic := "CustomTopic"
+	customTopic := NewToptic("CustomMessage")
 
 	// 定义事件处理函数
 	handler := func(msg interface{}) {

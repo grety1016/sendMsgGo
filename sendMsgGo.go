@@ -8,7 +8,7 @@ import (
 	"sendMsgGo/middleware"
 	"sendMsgGo/mssql"
 
-	// "sendMsgGo/eventful"
+	"sendMsgGo/eventful"
 
 	// "sendMsgGo/mssql/mssqldemo"
 	"net/http"
@@ -25,7 +25,7 @@ type DB = mssql.DBWrapper
 func main() {
 	logger.Init()
 
-	// eventful.EventDemo() // 测试event的例子
+	eventful.EventDemo() // 测试event的例子
 
 	// mssqldemo.SqlxDemo() // 测试mssql的例子
 

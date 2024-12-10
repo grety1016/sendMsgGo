@@ -1,0 +1,10 @@
+{
+    "go.inlayHints.assignVariableTypes": true,
+    "go.inlayHints.compositeLiteralFields": true,
+    "go.inlayHints.compositeLiteralTypes": true,
+    "go.inlayHints.constantValues": true,
+    "go.inlayHints.functionTypeParameters": true,
+    "go.inlayHints.rangeVariableTypes": true,
+    "rust-analyzer.inlayHints.bindingModeHints.enable": true,
+    "rust-analyzer.inlayHints.closureCaptureHints.enable": true
+}
