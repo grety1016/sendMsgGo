@@ -101,11 +101,6 @@ func GetDatabaseName(connStr string) string {
 	return ""
 }
 
-// 外部获取数据库名
-func (db *DBWrapper) GetDBName() string {
-	return db.dbName
-}
-
 // InitTX 初始化事务包装器
 func (dbWrapper *DBWrapper) initTX() (*TxWrapper, error) {
 	logrus.Infof("[DB] @%s - executing, sql: BeginTran { Begin transaction }", dbWrapper.dbName)

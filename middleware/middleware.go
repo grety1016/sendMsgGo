@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"sendMsgGo/logger"
+	"sendMsgGo/mssql"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,4 +83,14 @@ type responseBodyWriter struct {
 func (r *responseBodyWriter) Write(b []byte) (int, error) {
 	r.body.Write(b)
 	return r.ResponseWriter.Write(b)
+}
+
+type DB = mssql.DBWrapper
+//数据库实例注入
+// 中间件函数，将数据库连接注入到上下文中
+func DBMiddleware(db *DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("db", db)
+		c.Next()
+	}
 }
