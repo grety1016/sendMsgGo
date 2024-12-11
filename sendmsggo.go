@@ -29,7 +29,7 @@ func main() {
 
 	// gin.SetMode(gin.ReleaseMode)// 设置运行模式
 
-	r := gin.Default()                 // gin实例化
+	r  := gin.Default()                 // gin实例化
 	r.Use(middleware.DBMiddleware(db)) // 数据库注入gin中间件
 	r.Use(middleware.HttpLogger())     // http请求日志记录中间件
 

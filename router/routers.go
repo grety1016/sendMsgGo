@@ -11,22 +11,24 @@ import (
 
 type DB = mssql.DBWrapper
 
-func Router(r *gin.Engine) *gin.Engine {
- 
-	r.GET("/", func(ctx *gin.Context) {
-		db := ctx.MustGet("db").(*DB)
+func Router(r *gin.Engine) {
 
-		var todoList []TodoList
-		err := db.QueryCollect(&todoList, "SELECT * FROM getTodoList(@status,@phone)", sql.Named("status", "2"), sql.Named("phone", "15345923407"))
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	user := r.Group("/user")
+	{
+		user.GET("/", func(ctx *gin.Context) {
+			db := ctx.MustGet("db").(*DB)
 
-		ctx.JSON(http.StatusOK, todoList)
-	})
+			var todoList []TodoList
+			err := db.QueryCollect(&todoList, "SELECT * FROM getTodoList(@status,@phone)", sql.Named("status", "2"), sql.Named("phone", "15345923407"))
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 
-	return r
+			ctx.JSON(http.StatusOK, todoList)
+		})
+	}
+	
 }
 
 // 如下为类型定义
