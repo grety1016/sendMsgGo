@@ -6,12 +6,13 @@ import (
 	"io"
 	"time"
 
-	"sendmsggo/logger"
-	"sendmsggo/mssql"
+	"sendmsggo/util/logger"
 
 	"github.com/gin-gonic/gin"
 )
- 
+
+// #region 日志中间件
+
 func HttpLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 初始化Http日志
@@ -69,14 +70,18 @@ func HttpLogger() gin.HandlerFunc {
 			sign = "/"
 		}
 
+		// 获取处理函数名称
+		handlerName := c.HandlerName()
+
 		// 自定义日志格式
 		str := fmt.Sprintf(
-			"[Gin] | %s | %d | %4.2vms | %+v | %s | Errors: %s",
+			"[Gin] | %s | %d |%4.2vms | %s | %+v | %s | Errors: %s",
 			c.ClientIP(),
 			c.Writer.Status(),
 			latency,
 			c.Request.Method,
 			c.Request.URL.Path+sign+c.Request.URL.RawQuery,
+			handlerName, // 添加处理函数名称
 			Error,
 		)
 		logger.Info(str)
@@ -95,15 +100,3 @@ func (r *responseBodyWriter) Write(b []byte) (int, error) {
 }
 
 // #endregion 日志中间件
-
-// #region 数据库中间件
-// 中间件函数，将数据库连接注入到上下文中
-type DB = mssql.DBWrapper
-
-func DBMiddleware(db *DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set("db", db)
-		c.Next()
-	}
-}
- 

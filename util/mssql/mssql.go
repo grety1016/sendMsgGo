@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"sendmsggo/logger"
+	"sendmsggo/util/logger"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -105,16 +105,16 @@ func GetDatabaseName(connStr string) string {
 
 // InitTX 初始化事务包装器
 func (dbWrapper *DBWrapper) initTX() (*TxWrapper, error) {
-	logrus.Infof("[DB] @%s - executing, sql: BeginTran { Begin transaction }", dbWrapper.dbName)
+	logrus.Infof("[DB] @%s - executing   , sql: BeginTran { Begin transaction }", dbWrapper.dbName)
 	start := time.Now() // 执行开始时间
 	tx, err := dbWrapper.db.Beginx()
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: BeginTran { Failed to begin transaction, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: BeginTran { Failed to begin transaction, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 		return nil, err
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: BeginTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: BeginTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
 	return &TxWrapper{tx: tx, dbWrapper: dbWrapper, isCommitted: 0, txCount: 1}, nil
 }
 
@@ -224,7 +224,7 @@ func queryValue(exec Execer, query string, args ...interface{}) (interface{}, er
 	dbName := exec.DBName()
 
 	// 记录开始查询语句
-	logrus.Infof("[DB] @%s - executing, sql: QueryValue { sql: \"%s\", Params: [%v] }", dbName, query, logger.FormatNamedArgs(args))
+	logrus.Infof("[DB] @%s - executing   , sql: QueryValue { sql: \"%s\", Params: [%v] }", dbName, query, logger.FormatNamedArgs(args))
 	start := time.Now() // 执行开始时间
 
 	// 执行查询并获取单个值
@@ -258,7 +258,7 @@ func queryCollect(exec Execer, dest interface{}, query string, args ...interface
 	dbName := exec.DBName()
 
 	// 记录开始查询语句
-	logrus.Infof("[DB] @%s - executing, sql: QueryCollect { sql: \"%s\", Params: [%v] }", dbName, query, logger.FormatNamedArgs(args))
+	logrus.Infof("[DB] @%s - executing   , sql: QueryCollect { sql: \"%s\", Params: [%v] }", dbName, query, logger.FormatNamedArgs(args))
 	start := time.Now() // 执行开始时间
 
 	// 执行查询数据
@@ -291,7 +291,7 @@ func exec(exec Execer, query string, args interface{}) (int64, error) {
 	dbName := exec.DBName()
 
 	// 记录开始执行操作
-	logrus.Infof("[DB] @%s - executing, sql: Exec { sql: \"%s\", Params: [%+v] }", dbName, query, args)
+	logrus.Infof("[DB] @%s - executing   , sql: Exec { sql: \"%s\", Params: [%+v] }", dbName, query, args)
 	start := time.Now()
 
 	var totalRowsAffected int64
@@ -338,14 +338,14 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 	// 记录开始执行操作
 	start := time.Now()
 	// 开启事务
-	logrus.Infof("[DB] @%s - executing, sql: ExecSQLWithTran { Begin transaction }", dbWrapper.dbName)
+	logrus.Infof("[DB] @%s - executing   , sql: ExecSQLWithTran { Begin transaction }", dbWrapper.dbName)
 	tx, err := dbWrapper.db.Beginx()
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
 
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Failed to begin transaction, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Failed to begin transaction, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 		return 0, err
 	}
 
@@ -354,27 +354,27 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 		if p := recover(); p != nil {
 			tx.Rollback() // 错误处理或发生panic时回滚事务
 			elapsedMillis = time.Since(start).Milliseconds()
-			logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Failed to Rollback, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
+			logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Failed to Rollback, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 		} else if err != nil {
 			tx.Rollback() // 错误处理
 			elapsedMillis = time.Since(start).Milliseconds()
-			logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Failed to Rollback, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
+			logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Failed to Rollback, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 		} else {
 			err = tx.Commit() // 成功时提交事务
 			if err != nil {
 				elapsedMillis = time.Since(start).Milliseconds()
-				logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Failed to commit, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
+				logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Failed to commit, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 			}
 			elapsedMillis = time.Since(start).Milliseconds()
-			logrus.Infof("[DB] @%s - executing, sql: ExecSQLWithTran { Commit transaction }", dbWrapper.dbName)
-			logrus.Infof("[DB] @%s - executed:%dms, sql: ExecSQLWithTran { Transaction committed successfully }", dbWrapper.dbName, elapsedMillis)
+			logrus.Infof("[DB] @%s - executing   , sql: ExecSQLWithTran { Commit transaction }", dbWrapper.dbName)
+			logrus.Infof("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Transaction committed successfully }", dbWrapper.dbName, elapsedMillis)
 		}
 	}()
 
 	if args == nil {
 		args = struct{}{}
 	}
-	logrus.Infof("[DB] @%s - executing, sql: ExecSQLWithTran { sql: \"%s\", Params: [%+v] }", dbWrapper.dbName, query, logger.FormatNamedArgs(args))
+	logrus.Infof("[DB] @%s - executing   , sql: ExecSQLWithTran { sql: \"%s\", Params: [%+v] }", dbWrapper.dbName, query, logger.FormatNamedArgs(args))
 	start = time.Now() // 执行开始时间
 	// 执行 NamedExec 并获取受影响的行数
 	res, execErr := tx.NamedExec(query, args)
@@ -413,7 +413,7 @@ func (dbWrapper *DBWrapper) ExecuteAsync(fn func(*TxWrapper) AsyncResult) chan A
 		defer func() {
 			if p := recover(); p != nil {
 				elapsedMillis := time.Since(start).Milliseconds()
-				logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecuteAsync { Execution failed due to panic: %v }", dbWrapper.dbName, elapsedMillis, p)
+				logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecuteAsync { Execution failed due to panic: %v }", dbWrapper.dbName, elapsedMillis, p)
 				mu.Lock()
 				if !resultsClosed {
 					results <- AsyncResult{Error: fmt.Errorf("execution failed due to panic: %v", p)}
@@ -455,7 +455,7 @@ func (dbWrapper *DBWrapper) ExecuteAsync(fn func(*TxWrapper) AsyncResult) chan A
 				if p := recover(); p != nil {
 					txWrapper.Rollback()
 					elapsedMillis := time.Since(start).Milliseconds()
-					logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecuteAsync { Transaction rolled back due to panic: %v }", dbWrapper.dbName, elapsedMillis, p)
+					logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecuteAsync { Transaction rolled back due to panic: %v }", dbWrapper.dbName, elapsedMillis, p)
 					mu.Lock()
 					if !committed && !resultsClosed {
 						results <- AsyncResult{Error: fmt.Errorf("transaction rolled back due to panic: %v", p)}
@@ -472,7 +472,7 @@ func (dbWrapper *DBWrapper) ExecuteAsync(fn func(*TxWrapper) AsyncResult) chan A
 					commitErr := txWrapper.Commit()
 					if commitErr != nil {
 						elapsedMillis := time.Since(start).Milliseconds()
-						logrus.Errorf("[DB] @%s - executed:%dms, sql: ExecuteAsync { Failed to commit transaction: %v }", dbWrapper.dbName, elapsedMillis, commitErr)
+						logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecuteAsync { Failed to commit transaction: %v }", dbWrapper.dbName, elapsedMillis, commitErr)
 						mu.Lock()
 						if !committed && !resultsClosed {
 							results <- AsyncResult{Error: commitErr}
@@ -495,7 +495,7 @@ func (dbWrapper *DBWrapper) ExecuteAsync(fn func(*TxWrapper) AsyncResult) chan A
 			if result.Error != nil {
 				if sqlErr, ok := result.Error.(mssql.Error); ok && sqlErr.Number == 1205 { // 检测死锁错误号
 					elapsedMillis := time.Since(start).Milliseconds()
-					logrus.Warnf("[DB] @%s - executed:%dms, sql: ExecuteAsync { Deadlock detected, retrying transaction... Attempt %d/%d }", dbWrapper.dbName, elapsedMillis, i+1, maxRetries)
+					logrus.Warnf("[DB] @%s - elapsed:%dms, sql: ExecuteAsync { Deadlock detected, retrying transaction... Attempt %d/%d }", dbWrapper.dbName, elapsedMillis, i+1, maxRetries)
 					// 计算等待时间
 					waitTime := initialDelay * time.Duration(backoffFactor^i)
 					time.Sleep(waitTime) // 增加退避时间
@@ -529,7 +529,7 @@ func (dbWrapper *DBWrapper) ExecuteAsyncNoTx(fn func() AsyncResult) chan AsyncRe
 	go func() {
 		defer func() {
 			if p := recover(); p != nil {
-				logrus.Errorf("[DB] @%s - executed, sql: ExecuteAsyncNoTx { Execution failed due to panic: %v }", dbWrapper.dbName, p)
+				logrus.Errorf("[DB] @%s - elapsed, sql: ExecuteAsyncNoTx { Execution failed due to panic: %v }", dbWrapper.dbName, p)
 				mu.Lock()
 				if !resultsClosed {
 					results <- AsyncResult{Error: fmt.Errorf("execution failed due to panic: %v", p)}
@@ -564,7 +564,7 @@ func (dbWrapper *DBWrapper) ExecuteAsyncNoTx(fn func() AsyncResult) chan AsyncRe
 
 			if result.Error != nil {
 				if sqlErr, ok := result.Error.(mssql.Error); ok && sqlErr.Number == 1205 { // 检测死锁错误号
-					logrus.Warnf("[DB] @%s - executed, sql: ExecuteAsyncNoTx { Deadlock detected, retrying transaction... Attempt %d/%d }", dbWrapper.dbName, i+1, maxRetries)
+					logrus.Warnf("[DB] @%s - elapsed, sql: ExecuteAsyncNoTx { Deadlock detected, retrying transaction... Attempt %d/%d }", dbWrapper.dbName, i+1, maxRetries)
 					// 计算等待时间
 					// 指数退避
 					waitTime := initialDelay * time.Duration(backoffFactor^i)
@@ -603,21 +603,21 @@ func (dbWrapper *DBWrapper) BeginTranAutoCommit(fn func(*TxWrapper) (int64, erro
 	defer func() {
 		if p := recover(); p != nil {
 			txWrapper.Rollback() // 回滚事务
-			logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoCommit { Transaction rolled back due to panic: %v }", dbWrapper.dbName, p)
+			logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoCommit { Transaction rolled back due to panic: %v }", dbWrapper.dbName, p)
 			err = fmt.Errorf("transaction rolled back due to panic: %v", p) // 将 panic 信息转换为错误
 		} else if err != nil {
 			rollbackErr := txWrapper.Rollback() // 回滚事务
 			if rollbackErr != nil {
-				logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoCommit { Failed to rollback transaction: %v }", dbWrapper.dbName, rollbackErr)
+				logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoCommit { Failed to rollback transaction: %v }", dbWrapper.dbName, rollbackErr)
 				err = fmt.Errorf("transaction rolled back due to error: %v, rollback error: %v", err, rollbackErr)
 			} else {
-				logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoCommit { Transaction rollbaced,reason: %v }", dbWrapper.dbName, err)
+				logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoCommit { Transaction rollbaced,reason: %v }", dbWrapper.dbName, err)
 				err = fmt.Errorf("transaction rollbaced,reason: %v", err)
 			}
 		} else {
 			commitErr := txWrapper.Commit() // 提交事务
 			if commitErr != nil {
-				logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoCommit { Failed to commit transaction: %v }", dbWrapper.dbName, commitErr)
+				logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoCommit { Failed to commit transaction: %v }", dbWrapper.dbName, commitErr)
 				err = commitErr
 			}
 		}
@@ -637,15 +637,15 @@ func (dbWrapper *DBWrapper) BeginTranAutoRoll(fn func(*TxWrapper) (int64, error)
 	defer func() {
 		if p := recover(); p != nil {
 			txWrapper.Rollback() // 回滚事务
-			logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoRoll { Transaction rolled back due to panic: %v }", dbWrapper.dbName, p)
+			logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoRoll { Transaction rolled back due to panic: %v }", dbWrapper.dbName, p)
 			err = fmt.Errorf("transaction rolled back due to panic: %v", p) // 将 panic 信息转换为错误
 		} else if atomic.LoadInt32(&txWrapper.isCommitted) == 0 {
 			rollbackErr := txWrapper.Rollback() // 回滚事务
 			if rollbackErr != nil {
-				logrus.Errorf("[DB] @%s - executed, sql: BeginTranAutoRoll { Failed to rollback transaction: %v }", dbWrapper.dbName, rollbackErr)
+				logrus.Errorf("[DB] @%s - elapsed, sql: BeginTranAutoRoll { Failed to rollback transaction: %v }", dbWrapper.dbName, rollbackErr)
 
 			} else {
-				logrus.Infof("[DB] @%s - executed, sql: BeginTranAutoRoll { Transaction rolled back automatically as it was not committed }", dbWrapper.dbName)
+				logrus.Infof("[DB] @%s - elapsed, sql: BeginTranAutoRoll { Transaction rolled back automatically as it was not committed }", dbWrapper.dbName)
 			}
 		}
 	}()
@@ -669,23 +669,23 @@ func (txWrapper *TxWrapper) Commit() error {
 	start := time.Now() // 执行开始时间
 	if !txWrapper.HasTran() {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: HasTran(emit-%s) { No active transaction }", txWrapper.dbWrapper.dbName, elapsedMillis, "Commit")
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: HasTran(emit-%s) { No active transaction }", txWrapper.dbWrapper.dbName, elapsedMillis, "Commit")
 		return nil
 	} else {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: HasTran(emit-%s) { Transaction is active }", txWrapper.dbWrapper.dbName, elapsedMillis, "Commit")
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: HasTran(emit-%s) { Transaction is active }", txWrapper.dbWrapper.dbName, elapsedMillis, "Commit")
 	}
 
 	err := txWrapper.tx.Commit()
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: Commit { Failed to commit, Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%02dms, sql: Commit { Failed to commit, Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, err)
 		return err
 	}
 	atomic.AddInt32(&txWrapper.txCount, -1)
 	atomic.StoreInt32(&txWrapper.isCommitted, 1)
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: Commit { Transaction committed successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
+	logrus.Infof("[DB] @%s - elapsed:%02dms, sql: Commit { Transaction committed successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
 
 	return nil
 }
@@ -695,20 +695,20 @@ func (txWrapper *TxWrapper) Rollback() error {
 	start := time.Now() // 执行开始时间
 	if !txWrapper.HasTran() {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: HasTran(emit-%s) { No active transaction }", txWrapper.dbWrapper.dbName, elapsedMillis, "Rollback")
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: HasTran(emit-%s) { No active transaction }", txWrapper.dbWrapper.dbName, elapsedMillis, "Rollback")
 		return nil
 	} else {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: HasTran(emit-%s) { Transaction is active }", txWrapper.dbWrapper.dbName, elapsedMillis, "Rollback")
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: HasTran(emit-%s) { Transaction is active }", txWrapper.dbWrapper.dbName, elapsedMillis, "Rollback")
 	}
 
 	err := txWrapper.tx.Rollback()
 	if err != nil && err != sql.ErrTxDone {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: Rollback { Failed to rollback, Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%02dms, sql: Rollback { Failed to rollback, Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, err)
 	} else {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: Rollback { Transaction rolled back successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: Rollback { Transaction rolled back successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
 	}
 	// 确保在任何情况下都减少计数器
 	atomic.AddInt32(&txWrapper.txCount, -1)
@@ -730,11 +730,11 @@ func (txWrapper *TxWrapper) SaveTran(name string) error {
 	_, err := txWrapper.tx.Exec(fmt.Sprintf("SAVE TRANSACTION %s", name))
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: SaveTran { Failed to create savepoint \"%s\", Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, name, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: SaveTran { Failed to create savepoint \"%s\", Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, name, err)
 		return err
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: SaveTran { Savepoint \"%s\" created successfully }", txWrapper.dbWrapper.dbName, elapsedMillis, name)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: SaveTran { Savepoint \"%s\" created successfully }", txWrapper.dbWrapper.dbName, elapsedMillis, name)
 	return nil
 }
 
@@ -744,11 +744,11 @@ func (txWrapper *TxWrapper) RollbackToSave(name string) error {
 	_, err := txWrapper.tx.Exec(fmt.Sprintf("ROLLBACK TRANSACTION %s", name))
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: RollbackToSave { Failed to rollback to savepoint \"%s\", Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, name, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: RollbackToSave { Failed to rollback to savepoint \"%s\", Error: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, name, err)
 		return err
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: RollbackToSave { Transaction rolled back to savepoint \"%s\" successfully }", txWrapper.dbWrapper.dbName, elapsedMillis, name)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: RollbackToSave { Transaction rolled back to savepoint \"%s\" successfully }", txWrapper.dbWrapper.dbName, elapsedMillis, name)
 	return nil
 }
 
@@ -764,7 +764,7 @@ func (txWrapper *TxWrapper) Close() error {
 		if txWrapper.HasTran() {
 			txWrapper.Rollback()
 			elapsedMillis := time.Since(start).Milliseconds()
-			logrus.Errorf("[DB] @%s - executed:%dms, sql: Close { transaction rolled back due to panic: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, p)
+			logrus.Errorf("[DB] @%s - elapsed:%02dms, sql: Close { transaction rolled back due to panic: %v }", txWrapper.dbWrapper.dbName, elapsedMillis, p)
 		}
 		return fmt.Errorf("transaction rolled back due to panic: %v", p)
 	}
@@ -772,10 +772,10 @@ func (txWrapper *TxWrapper) Close() error {
 	if !txWrapper.IsCommitted() && txWrapper.HasTran() { // 使用 IsCommitted 和 HasTran 检查事务状态
 		txWrapper.Rollback()
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Infof("[DB] @%s - executed:%dms, sql: Close { Transaction was not committed, automatically rolled back }", txWrapper.dbWrapper.dbName, elapsedMillis)
+		logrus.Infof("[DB] @%s - elapsed:%02dms, sql: Close { Transaction was not committed, automatically rolled back }", txWrapper.dbWrapper.dbName, elapsedMillis)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: Close { Transaction closed successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
+	logrus.Infof("[DB] @%s - elapsed:%02dms, sql: Close { Transaction closed successfully }", txWrapper.dbWrapper.dbName, elapsedMillis)
 	return nil
 }
 
@@ -798,18 +798,18 @@ func (txWrapper *TxWrapper) TableExists(tableName string) (bool, error) {
 func tableExists(exec Execer, tableName string) (bool, error) {
 	var exists bool
 	dbName := exec.DBName()
-	logrus.Infof("[DB] @%s - executing, sql: TableExists { Table [ %s ] Exists? }", dbName, tableName)
+	logrus.Infof("[DB] @%s - executing   , sql: TableExists { Table [ %s ] Exists? }", dbName, tableName)
 
 	query := "SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @p1"
 	start := time.Now() // 执行开始时间
 	err := exec.QueryRowx(query, tableName).Scan(&exists)
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: TableExists { Failed to check if table exists, Error: %v }", dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: TableExists { Failed to check if table exists, Error: %v }", dbName, elapsedMillis, err)
 		return false, fmt.Errorf("failed to check if table exists: %w", err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: TableExists { Table [ %s ] exists: %v }", dbName, elapsedMillis, tableName, exists)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: TableExists { Table [ %s ] exists: %v }", dbName, elapsedMillis, tableName, exists)
 
 	return exists, nil
 }
@@ -833,16 +833,16 @@ func columnExists(exec Execer, tableName string, columnName string) (bool, error
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = @p1 AND COLUMN_NAME = @p2
     `
-	logrus.Infof("[DB] @%s - executing, sql: columnExists { Table [ %s ] exists column [ %s ]? }", dbName, tableName, columnName)
+	logrus.Infof("[DB] @%s - executing   , sql: columnExists { Table [ %s ] exists column [ %s ]? }", dbName, tableName, columnName)
 	start := time.Now() // 执行开始时间
 	err := exec.QueryRowx(query, tableName, columnName).Scan(&exists)
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: ColumnExists { Failed to check if column exists, Error: %v }", dbName, elapsedMillis, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ColumnExists { Failed to check if column exists, Error: %v }", dbName, elapsedMillis, err)
 		return false, fmt.Errorf("failed to check if column exists: %w", err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: ColumnExists { Table [ %s ] exists column [ %s ]: %v }", dbName, elapsedMillis, tableName, columnName, exists)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: ColumnExists { Table [ %s ] exists column [ %s ]: %v }", dbName, elapsedMillis, tableName, columnName, exists)
 	return exists, nil
 }
 
@@ -871,11 +871,11 @@ func lockExists(execer Execer, tableName string) (bool, error) {
 	err := execer.QueryRowx(query, tableName).Scan(&exists)
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
-		logrus.Errorf("[DB] @%s - executed:%dms, sql: LockExists { Failed to check if table %s is locked, Error: %v }", dbName, elapsedMillis, tableName, err)
+		logrus.Errorf("[DB] @%s - elapsed:%dms, sql: LockExists { Failed to check if table %s is locked, Error: %v }", dbName, elapsedMillis, tableName, err)
 		return false, fmt.Errorf("failed to check if table [ %s ] is locked: %w", tableName, err)
 	}
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - executed:%dms, sql: LockExists { Table [ %s ] locked is: %v }", dbName, elapsedMillis, tableName, exists)
+	logrus.Infof("[DB] @%s - elapsed:%dms, sql: LockExists { Table [ %s ] locked is: %v }", dbName, elapsedMillis, tableName, exists)
 	return exists, nil
 }
 
