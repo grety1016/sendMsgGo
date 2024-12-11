@@ -11,7 +11,7 @@ import (
 	// "github.com/jmoiron/sqlx"
 
 	// "sendmsg/middleware"
-	"sendmsggo/mssql"
+	"sendmsggo/util/mssql"
 
 	"github.com/sirupsen/logrus"
 	// "github.com/gin-gonic/gin"
