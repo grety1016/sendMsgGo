@@ -55,7 +55,7 @@ func HttpLogger() gin.HandlerFunc {
 				stack := debug.Stack()
 				importantStack := extractImportantStack(stack)
 
-				// 检查是否已经写入响应头,防止中间的处理再次发生其它响应写入
+				// 检查是否已经写入响应头
 				if !c.Writer.Written() {
 					// 设置状态码为 500
 					c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -83,6 +83,16 @@ func HttpLogger() gin.HandlerFunc {
 				}
 			} else if Error == "" {
 				Error = "None"
+			}
+
+			// 添加非200状态的状态信息
+			if c.Writer.Status() != http.StatusOK {
+				statusText, exists := statusText[c.Writer.Status()]
+				if exists {
+					Error = fmt.Sprintf("%s | %d %s", Error, c.Writer.Status(), statusText)
+				} else {
+					Error = fmt.Sprintf("%s | %d", Error, c.Writer.Status())
+				}
 			}
 
 			//请求URL如果没有查询参数，则不显示"/"符号
@@ -150,3 +160,69 @@ func (r *responseBodyWriter) Write(b []byte) (int, error) {
 }
 
 // #endregion 日志中间件
+
+// HTTPSTATUS
+var statusText = map[int]string{
+	100: "Continue",
+	101: "Switching Protocols",
+	102: "Processing",
+	103: "Early Hints",
+	200: "OK",
+	201: "Created",
+	202: "Accepted",
+	203: "Non-Authoritative Information",
+	204: "No Content",
+	205: "Reset Content",
+	206: "Partial Content",
+	207: "Multi-Status",
+	208: "Already Reported",
+	226: "IM Used",
+	300: "Multiple Choices",
+	301: "Moved Permanently",
+	302: "Found",
+	303: "See Other",
+	304: "Not Modified",
+	305: "Use Proxy",
+	307: "Temporary Redirect",
+	308: "Permanent Redirect",
+	400: "Bad Request",
+	401: "Unauthorized",
+	402: "Payment Required",
+	403: "Forbidden",
+	404: "Not Found",
+	405: "Method Not Allowed",
+	406: "Not Acceptable",
+	407: "Proxy Authentication Required",
+	408: "Request Timeout",
+	409: "Conflict",
+	410: "Gone",
+	411: "Length Required",
+	412: "Precondition Failed",
+	413: "Payload Too Large",
+	414: "URI Too Long",
+	415: "Unsupported Media Type",
+	416: "Range Not Satisfiable",
+	417: "Expectation Failed",
+	418: "I'm a teapot",
+	421: "Misdirected Request",
+	422: "Unprocessable Entity",
+	423: "Locked",
+	424: "Failed Dependency",
+	425: "Too Early",
+	426: "Upgrade Required",
+	428: "Precondition Required",
+	429: "Too Many Requests",
+	431: "Request Header Fields Too Large",
+	451: "Unavailable For Legal Reasons",
+	500: "Internal Server Error",
+	501: "Not Implemented",
+	502: "Bad Gateway",
+	503: "Service Unavailable",
+	504: "Gateway Timeout",
+	505: "HTTP Version Not Supported",
+	506: "Variant Also Negotiates",
+	507: "Insufficient Storage",
+	508: "Loop Detected",
+	510: "Not Extended",
+	511: "Network Authentication Required",
+}

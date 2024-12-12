@@ -35,7 +35,7 @@ func main() {
 
 	r := gin.Default() // gin实例化
 
-	r.Use(middleware.HttpLogger())     // http请求日志记录中间件
+	r.Use(middleware.HttpLogger())     // http请求日志记录中间件&&panic恢复中间件
 	r.Use(middleware.DBMiddleware(db)) // 数据库注入gin中间件
 	
 
