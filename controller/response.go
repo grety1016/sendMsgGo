@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,5 +30,11 @@ func ResponseError(c *gin.Context, code int, msg interface{}) {
 	json := JsonError{
 		Code: code, Msg: msg,
 	}
-	c.JSON(http.StatusOK, json)
+
+	// 设置 HTTP 状态码
+	c.Writer.WriteHeader(code)
+	// 将错误信息记录到 gin.Context 中
+	c.Error(fmt.Errorf("%v", msg))
+	// 使用 c.AbortWithStatusJSON 确保中止后续中间件的执行
+	c.JSON(c.Writer.Status(), json)
 }

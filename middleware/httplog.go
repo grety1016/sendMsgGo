@@ -4,17 +4,22 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"time"
-
+	"net/http"
+	"runtime/debug"
+	"sendmsggo/controller"
 	"sendmsggo/util/logger"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// #region 日志中间件
+type JsonError = controller.JsonError
 
 func HttpLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var Error string
+
 		// 初始化Http日志
 		logger := logger.InitHTTPLogger() // 独立日志与DB日志区分
 
@@ -27,7 +32,7 @@ func HttpLogger() gin.HandlerFunc {
 
 		// 记录请求头
 		requestHeaders := ""
-		for key, values := range c.Request.Header {
+		for key, values := range c.Request.Header { // 确保这里使用 := range 来遍历 map
 			for _, value := range values {
 				requestHeaders += fmt.Sprintf("%s: %s; ", key, value)
 			}
@@ -40,52 +45,97 @@ func HttpLogger() gin.HandlerFunc {
 		// 记录请求开始时间
 		start := time.Now()
 
+		// 捕捉 panic 错误并记录日志
+		defer func() {
+			if rec := recover(); rec != nil {
+				err := fmt.Errorf("%v", rec)
+				c.Error(err) // 将 panic 转换为 gin 错误
+
+				// 获取堆栈跟踪信息并提取重要部分
+				stack := debug.Stack()
+				importantStack := extractImportantStack(stack)
+
+				// 检查是否已经写入响应头,防止中间的处理再次发生其它响应写入
+				if !c.Writer.Written() {
+					// 设置状态码为 500
+					c.Writer.WriteHeader(http.StatusInternalServerError)
+					json := JsonError{
+						Code: http.StatusInternalServerError,
+						Msg:  fmt.Sprintf("%v | %s", err, importantStack), // 将重要的堆栈跟踪信息添加到错误信息中
+					}
+					c.AbortWithStatusJSON(c.Writer.Status(), json)
+				}
+
+				// 将错误信息记录到 Error 中
+				Error = fmt.Sprintf("panic: %v | %s", err, importantStack)
+			}
+
+			// 记录响应时间
+			latency := time.Since(start)
+
+			// 记录错误信息
+			if len(c.Errors) > 0 {
+				// 记录捕获的错误信息
+				if Error == "None" || Error == "" {
+					Error = strings.ReplaceAll(c.Errors.ByType(gin.ErrorTypePrivate).String(), "\n", "")
+				} else {
+					Error = fmt.Sprintf("%s | %s", Error, strings.ReplaceAll(c.Errors.ByType(gin.ErrorTypePrivate).String(), "\n", ""))
+				}
+			} else if Error == "" {
+				Error = "None"
+			}
+
+			//请求URL如果没有查询参数，则不显示"/"符号
+			var sign string
+			if c.Request.URL.RawQuery == "" {
+				sign = ""
+			} else {
+				sign = "/"
+			}
+
+			// 获取处理函数名称
+			handlerName := c.HandlerName()
+
+			// 自定义日志格式
+			str := fmt.Sprintf(
+				"[Gin] | %s | %d |%4.2vms | %s | %+v | %s | Errors: %s",
+				c.ClientIP(),
+				c.Writer.Status(),
+				latency,
+				c.Request.Method,
+				c.Request.URL.Path+sign+c.Request.URL.RawQuery,
+				handlerName, // 添加处理函数名称
+				Error,
+			)
+			logger.Info(str)
+		}()
+
 		// 处理请求
 		c.Next()
-
-		// 记录响应时间
-		latency := time.Since(start)
-
-		// 记录响应头
-		responseHeaders := ""
-		for key, values := range c.Writer.Header() {
-			for _, value := range values {
-				responseHeaders += fmt.Sprintf("%s: %s; ", key, value)
-			}
-		}
-
-		var Error string
-		// 记录错误信息
-		if len(c.Errors) > 0 {
-			Error = c.Errors.ByType(gin.ErrorTypePrivate).String()
-		} else {
-			Error = "None"
-		}
-
-		//请求URL如果没有查询参数，则不显示"/"符号
-		var sign string
-		if c.Request.URL.RawQuery == "" {
-			sign = ""
-		} else {
-			sign = "/"
-		}
-
-		// 获取处理函数名称
-		handlerName := c.HandlerName()
-
-		// 自定义日志格式
-		str := fmt.Sprintf(
-			"[Gin] | %s | %d |%4.2vms | %s | %+v | %s | Errors: %s",
-			c.ClientIP(),
-			c.Writer.Status(),
-			latency,
-			c.Request.Method,
-			c.Request.URL.Path+sign+c.Request.URL.RawQuery,
-			handlerName, // 添加处理函数名称
-			Error,
-		)
-		logger.Info(str)
 	}
+}
+
+// extractImportantStack 提取堆栈跟踪信息中的重要部分并格式化成单行
+func extractImportantStack(stack []byte) string {
+	lines := bytes.Split(stack, []byte{'\n'})
+	var importantLines [][]byte
+
+	// 标记开始记录关键堆栈信息的标志
+	record := false
+
+	for _, line := range lines {
+		if bytes.Contains(line, []byte("panic")) {
+			record = true
+		}
+		if record {
+			importantLines = append(importantLines, bytes.TrimSpace(line))
+		}
+	}
+	// 只保留重要的前15行
+	if len(importantLines) > 3 {
+		importantLines = importantLines[:3]
+	}
+	return string(bytes.Join(importantLines, []byte(" | ")))
 }
 
 // responseBodyWriter 是一个用于记录响应体的自定义 ResponseWriter
