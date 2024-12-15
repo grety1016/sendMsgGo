@@ -141,3 +141,21 @@ func InitHTTPLogger() *logrus.Logger {
 	})
 	return httpLogger
 }
+
+func InitDDLogger() *logrus.Logger {
+	httpLogOnce.Do(func() {
+		httpLogger = logrus.New()
+		currentDate := time.Now().Format("2006-01-02")
+		logFile := &lumberjack.Logger{
+			Filename:   fmt.Sprintf("./LOGFILES/DDLog_%s.log", currentDate),
+			MaxSize:    100,
+			MaxBackups: 0,
+			MaxAge:     0,
+			Compress:   true,
+		}
+		httpLogger.SetOutput(logFile)
+		httpLogger.SetFormatter(&HTTPLogFormatter{})
+		httpLogger.SetLevel(logrus.InfoLevel)
+	})
+	return httpLogger
+}

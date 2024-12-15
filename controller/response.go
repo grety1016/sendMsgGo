@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
+ 
 type JsonSuccess struct {
 	Code  int         `json:"code"`
 	Msg   interface{} `json:"msg"`

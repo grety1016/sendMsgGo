@@ -3,6 +3,7 @@ package eventful
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 )
 
 //#region 事件驱动包
@@ -13,10 +14,13 @@ type Eventful struct {
 	subscribers sync.Map
 }
 
-type Toptic string
+type Topic string
 
 // 构造函数
-func NewToptic(value string) Toptic { return Toptic(value) }
+func NewTopic(value string) Topic { return Topic(value) }
+
+// 获取 Topic 的值
+func (t Topic) Value() string { return string(t) }
 
 // 初始化事件分发器
 func NewEventful() *Eventful {
@@ -26,14 +30,13 @@ func NewEventful() *Eventful {
 // 订阅者结构
 type Subscriber struct {
 	id      uint64
-	topic   Toptic
+	topic   Topic
 	handler func(interface{})
 }
 
 // 订阅事件
-func (e *Eventful) Subscribe(topic Toptic, handler func(interface{})) uint64 {
-	subId := e.nextId
-	e.nextId++
+func (e *Eventful) Subscribe(topic Topic, handler func(interface{})) uint64 {
+	subId := atomic.AddUint64(&e.nextId, 1) - 1
 	sub := &Subscriber{id: subId, topic: topic, handler: handler}
 	e.subscribers.Store(subId, sub)
 	return subId
@@ -45,7 +48,7 @@ func (e *Eventful) Unsubscribe(subId uint64) {
 }
 
 // 发布主题事件
-func (e *Eventful) Publish(topic Toptic, msg interface{}) {
+func (e *Eventful) Publish(topic Topic, msg interface{}) {
 	e.subscribers.Range(func(key, value interface{}) bool {
 		sub := value.(*Subscriber)
 		if sub.topic == topic {
@@ -64,7 +67,8 @@ func EventDemo() {
 	eventful := NewEventful()
 
 	// 创建自定义主题
-	customTopic := NewToptic("CustomMessage")
+	customTopic := NewTopic("CustomMessage")
+	fmt.Println("Custom topic:", customTopic.Value())
 
 	// 定义事件处理函数
 	handler := func(msg interface{}) {

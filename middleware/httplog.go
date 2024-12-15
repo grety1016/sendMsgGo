@@ -120,6 +120,8 @@ func HttpLogger() gin.HandlerFunc {
 			logger.Info(str)
 		}()
 
+		c.Request.URL.Path = strings.ToLower(c.Request.URL.Path) // 请求地址 path 统一转为小写,防止前端传大写导致路由匹配不正确
+
 		// 处理请求
 		c.Next()
 	}
@@ -141,7 +143,7 @@ func extractImportantStack(stack []byte) string {
 			importantLines = append(importantLines, bytes.TrimSpace(line))
 		}
 	}
-	// 只保留重要的前15行
+	// 只保留重要的前3行
 	if len(importantLines) > 3 {
 		importantLines = importantLines[:3]
 	}

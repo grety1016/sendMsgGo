@@ -3,7 +3,6 @@ package mssql
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"sendmsggo/util/logger"
 	"strings"
 	"sync"
@@ -49,7 +48,7 @@ type TxWrapper struct {
 
 func SetDBConfig(connString string, maxOpenConns int, maxIdleConns int, connMaxLifetime time.Duration, connMaxIdleTime time.Duration) DBConfig {
 	return DBConfig{
-		connString:      os.Getenv(connString),
+		connString:      connString,
 		maxOpenConns:    maxOpenConns,
 		maxIdleConns:    maxIdleConns,
 		connMaxLifetime: connMaxLifetime,
@@ -338,10 +337,8 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 	// 记录开始执行操作
 	start := time.Now()
 	// 开启事务
-	logrus.Infof("[DB] @%s - executing   , sql: ExecSQLWithTran { Begin transaction }", dbWrapper.dbName)
 	tx, err := dbWrapper.db.Beginx()
 	elapsedMillis := time.Since(start).Milliseconds()
-	logrus.Infof("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Transaction begun successfully }", dbWrapper.dbName, elapsedMillis)
 
 	if err != nil {
 		elapsedMillis := time.Since(start).Milliseconds()
@@ -366,8 +363,6 @@ func execWithTran(dbWrapper *DBWrapper, query string, args interface{}) (int64, 
 				logrus.Errorf("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Failed to commit, Error: %v }", dbWrapper.dbName, elapsedMillis, err)
 			}
 			elapsedMillis = time.Since(start).Milliseconds()
-			logrus.Infof("[DB] @%s - executing   , sql: ExecSQLWithTran { Commit transaction }", dbWrapper.dbName)
-			logrus.Infof("[DB] @%s - elapsed:%dms, sql: ExecSQLWithTran { Transaction committed successfully }", dbWrapper.dbName, elapsedMillis)
 		}
 	}()
 
@@ -654,7 +649,7 @@ func (dbWrapper *DBWrapper) BeginTranAutoRoll(fn func(*TxWrapper) (int64, error)
 	return results, err
 }
 
-// BeginTran 开启事务
+// BeginTran 开启事务（MSSQL没有嵌套事务，每个事务开启是独立的，请勿使用嵌套，嵌套事务是两个不同的事务实例）
 func (dbWrapper *DBWrapper) BeginTran() (*TxWrapper, error) {
 	txWrapper, err := dbWrapper.initTX()
 	if err != nil {

@@ -10,7 +10,7 @@ func Router(r *gin.Engine) {
 
 	user := r.Group("/user")
 	{
-		user.GET("", controller.GetTodoList)
+		user.GET("getsmscode", controller.GetSmsCode)
 
 	}
 
