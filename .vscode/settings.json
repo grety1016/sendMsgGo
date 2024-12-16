@@ -7,5 +7,6 @@
     "go.inlayHints.rangeVariableTypes": true,
     "rust-analyzer.inlayHints.bindingModeHints.enable": true,
     "rust-analyzer.inlayHints.closureCaptureHints.enable": true,
-    "gitlens.home.preview.enabled": false
+    "gitlens.home.preview.enabled": false,
+    "commentTranslate.browse.mode": "inplace"
 }

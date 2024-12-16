@@ -6,6 +6,7 @@ import (
 	"sendmsggo/util/ddtoken"
 	"sendmsggo/util/logger"
 	"sendmsggo/util/mssql"
+	"sendmsggo/validator"
 	"time"
 
 	// "sendmsggo/util/eventful"
@@ -20,6 +21,8 @@ import (
 func main() {
 	// 初始化日志
 	logger.Init()
+
+	validator.InitValidator() // 初始化验证器
 
 	//token获取
 	go func() {

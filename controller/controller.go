@@ -2,10 +2,13 @@ package controller
 
 import (
 	"database/sql"
+	"fmt"
 	"math/rand"
 	"net/http"
+	"sendmsggo/model"
 	"sendmsggo/util/ddtoken"
 	"sendmsggo/util/mssql"
+	"sendmsggo/validator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,13 +17,23 @@ type DB = mssql.DBWrapper //mssql.DBWrapper类型别名
 
 // 处理获取短信验证码的请求
 func GetSmsCode(c *gin.Context) {
-	userphone := c.Query("userphone") //获取url查询参数 userphone
-
-	db := c.MustGet("db").(*DB) //从中间件获取db对象
-
 	code := http.StatusOK //返回状态码
 	msg := "验证码发送成功"      //错误信息
 	var smsCode int = 0   //短信验证码
+
+	userphone := c.Query("userphone") //获取url查询参数 userphone
+
+	validate := validator.GetValidator()
+
+	if err := validate.Var(userphone, "userPhone"); err != nil {
+		fmt.Println(err)
+		msg = "手机号格式错误!"
+		code = http.StatusBadRequest
+		ResponseSuccess(c, code, msg, msg, 1)
+		return
+	}
+
+	db := c.MustGet("db").(*DB) //从中间件获取db对象
 
 	// // 查询当前手机是否在消息用户列表中存在有效验证码
 	query := "SELECT DATEDIFF(SECOND, createdtime, GETDATE()) FROM dbo.sendMsg_users WHERE userPhone = @userphone"
@@ -30,6 +43,8 @@ func GetSmsCode(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			msg = "该手机号未注册!"
 			code = http.StatusNotFound
+			ResponseSuccess(c, code, msg, msg, 1)
+			return
 		} else {
 			msg = err.Error()
 			code = http.StatusInternalServerError
@@ -93,4 +108,29 @@ func GetSmsCode(c *gin.Context) {
 	}
 	// 验证码发送成功
 	ResponseSuccess(c, code, msg, msg, 1)
+}
+
+func LoginPost(c *gin.Context) {
+	var msg string //返回信息
+	var code int   //返回状态码
+
+	// 绑定json数据到结构体
+	var user model.LoginUser
+	// 绑定json数据到结构体，验证字段是否匹配
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		msg = "手机号或验证码错误!"
+		code = http.StatusBadRequest
+		ResponseSuccess(c, code, msg, msg, 1)
+		return
+	}
+	//正则验证手机号及验证码格式
+	err = validator.GetValidator().Struct(user) //验证结构体
+	if err != nil {
+		msg = "手机号或验证码格式错误!"
+		code = http.StatusBadRequest
+		ResponseSuccess(c, code, msg, msg, 1)
+		return
+	}
+
 }

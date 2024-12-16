@@ -15,6 +15,9 @@ var (
 func InitValidator() {
 	once.Do(func() {
 		validate = validator.New()
+		// 自定义验证器
+		validate.RegisterValidation("userPhone", validatePhoneNumber)
+		validate.RegisterValidation("smsCode", validateSmsCode)
 	})
 }
 

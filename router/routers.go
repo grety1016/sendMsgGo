@@ -11,7 +11,7 @@ func Router(r *gin.Engine) {
 	user := r.Group("/user")
 	{
 		user.GET("getsmscode", controller.GetSmsCode)
-
+		user.POST("/login", controller.LoginPost)
 	}
 
 }

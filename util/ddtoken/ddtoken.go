@@ -172,7 +172,6 @@ func (s *SmsMessage) SendSmsCode() error {
 		logrus.Errorf("Error marshaling JSON: %v", err)
 		return err
 	}
-	logrus.Infof("Request Body JSON: %s", string(requestBodyJSON))
 
 	// 发起请求
 	client := &http.Client{}
@@ -260,7 +259,7 @@ func (p *ProcessApproval) SendMsg() error {
 		return err
 	}
 
-	logrus.Infof("send_result: %s, userphone: %s\n", string(respBody), p.UserID)
+	logrus.Infof("[DD]-Send_smscode_result: %s, userphone: %s\n", string(respBody), p.UserID)
 	return nil
 }
 
