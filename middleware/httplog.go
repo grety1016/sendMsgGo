@@ -23,19 +23,19 @@ func HttpLogger() gin.HandlerFunc {
 		// 初始化Http日志
 		logger := logger.InitHTTPLogger() // 独立日志与DB日志区分
 
-		// 记录请求体
-		var requestBody []byte
-		if c.Request.Body != nil {
-			requestBody, _ = io.ReadAll(c.Request.Body)
-			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
-		}
-
 		// 记录请求头
 		requestHeaders := ""
 		for key, values := range c.Request.Header { // 确保这里使用 := range 来遍历 map
 			for _, value := range values {
 				requestHeaders += fmt.Sprintf("%s: %s; ", key, value)
 			}
+		}
+
+		// 记录请求体
+		var requestBody []byte
+		if c.Request.Body != nil {
+			requestBody, _ = io.ReadAll(c.Request.Body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		}
 
 		// 记录响应体
@@ -70,9 +70,6 @@ func HttpLogger() gin.HandlerFunc {
 				Error = fmt.Sprintf("panic: %v | %s", err, importantStack)
 			}
 
-			// 记录响应时间
-			latency := time.Since(start)
-
 			// 记录错误信息
 			if len(c.Errors) > 0 {
 				// 记录捕获的错误信息
@@ -105,7 +102,8 @@ func HttpLogger() gin.HandlerFunc {
 
 			// 获取处理函数名称
 			handlerName := c.HandlerName()
-
+			// 记录响应时间
+			latency := time.Since(start)
 			// 自定义日志格式
 			str := fmt.Sprintf(
 				"[Gin] | %s | %d |%4.2vms | %s | %+v | %s | Errors: %s",
@@ -117,7 +115,11 @@ func HttpLogger() gin.HandlerFunc {
 				handlerName, // 添加处理函数名称
 				Error,
 			)
-			logger.Info(str)
+			if c.Writer.Status() != http.StatusOK || len(c.Errors) > 0 {
+				logger.Error(str)
+			} else {
+				logger.Info(str)
+			}
 		}()
 
 		c.Request.URL.Path = strings.ToLower(c.Request.URL.Path) // 请求地址 path 统一转为小写,防止前端传大写导致路由匹配不正确
