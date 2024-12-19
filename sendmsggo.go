@@ -14,12 +14,12 @@ import (
 	// "sendmsggo/util/mssql/mssqldemo"
 
 	_ "github.com/denisenkom/go-mssqldb" //mssql驱动
+	"github.com/gin-contrib/gzip"
+
 	//gzip压缩中间件
 	"github.com/gin-gonic/gin"   //gin框架
 	"github.com/sirupsen/logrus" //日志库
 )
-
-
 
 func main() {
 
@@ -38,7 +38,7 @@ func main() {
 	// 初始化数据库封装实例对象
 	db, err := initDB()
 	if err != nil {
-		logrus.Fatalf("[DB] @%s - Failed to open to database: %v ", db.DBName(), err)
+		logrus.Errorf("[DB] @%s - Failed to open to database: %v ", db.DBName(), err)
 	}
 	logrus.Infof("[DB] @%s - Connecte database success ", db.DBName())
 
@@ -51,12 +51,12 @@ func main() {
 
 	r.SetTrustedProxies([]string{"192.168.0.31"}) //设置信任代理IP地址
 
-	r.Use(middleware.HttpLogger())     // http请求日志记录中间件&&panic恢复中间件&&请求地址转换成小写
-	r.Use(middleware.ValidateJWT())    // JWT验证中间件
-	r.Use(middleware.DBMiddleware(db)) // 数据库注入gin中间件
-
+	r.Use(middleware.HttpLogger())                           // http请求日志记录中间件&&panic恢复中间件&&请求地址转换成小写
+	r.Use(middleware.ValidateJWT())                          // JWT验证中间件
+	r.Use(middleware.DBMiddleware(db))                       // 数据库注入gin中间件
+	r.StaticFS("/files", gin.Dir("D:/kingdee  File", false)) // 将 /files/ 路径映射到 D:\kingkee files\
 	// 使用最快压缩级别
-	// r.Use(gzip.Gzip(gzip.BestSpeed))
+	r.Use(gzip.Gzip(gzip.BestSpeed))
 
 	router.Router(r) // 路由注册
 
@@ -73,7 +73,7 @@ func initDB() (*DB, error) {
 	dbConfig := mssql.SetDBConfig(dbconfigstr, 100, 20, 60*time.Minute, 15*time.Minute)
 	db, err := mssql.InitDB(dbConfig)
 	if err != nil {
-		logrus.Fatalf("[DB] @%s - Failed to open to database: %v ", db.DBName(), err)
+		logrus.Errorf("[DB] @%s - Failed to open to database: %v ", db.DBName(), err)
 		return nil, err
 	}
 	return db, nil

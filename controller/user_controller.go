@@ -83,7 +83,7 @@ func GetSmsCode(c *gin.Context) {
 				if err != nil {
 					msg = "获取钉钉token失败!"
 					code = http.StatusInternalServerError
-					ResponseSuccess(c, code, msg, "", 1)
+					ResponseError(c, code, msg)
 					return
 				}
 
@@ -96,7 +96,7 @@ func GetSmsCode(c *gin.Context) {
 				if err != nil {
 					msg = "获取钉钉token失败!"
 					code = http.StatusInternalServerError
-					ResponseSuccess(c, code, msg, "", 1)
+					ResponseError(c, code, msg)
 					return
 				}
 			}
@@ -105,6 +105,8 @@ func GetSmsCode(c *gin.Context) {
 			// if err != nil {
 			// 	msg = "验证码发送失败!"
 			// 	code = http.StatusInternalServerError
+			// ResponseError(c, code, msg)
+			// return
 			// }
 
 		}
@@ -164,7 +166,7 @@ func LoginPost(c *gin.Context) {
 		token, err := jwtgo.GenerateJWT(user.UserPhone.String()) //因为user.UserPhone是json.Number类型，所以需要转换成string类型
 		if err != nil {
 			logger.InitHTTPLogger().Errorf("[HTTP]-Error generating token:%s", err.Error())
-			ResponseSuccess(c, http.StatusInternalServerError, err.Error(), "", 1)
+			ResponseError(c, http.StatusInternalServerError, "生成token失败")
 			return
 		} else {
 			// 设置响应头

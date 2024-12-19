@@ -104,17 +104,26 @@ func HttpLogger() gin.HandlerFunc {
 			handlerName := c.HandlerName()
 			// 记录响应时间
 			latency := time.Since(start)
+			var latencyStr string
+
+			if latency >= time.Second {
+				latencyStr = fmt.Sprintf("%4.1fs", latency.Seconds())
+			} else {
+				latencyStr = fmt.Sprintf("%4dms", latency.Milliseconds())
+			}
+
 			// 自定义日志格式
 			str := fmt.Sprintf(
-				"[Gin] | %s | %d |%4.2vms | %s | %+v | %s | Errors: %s",
+				"[Gin] | %s | %d | %s | %s | %+v | %s | Errors: %s",
 				c.ClientIP(),
 				c.Writer.Status(),
-				latency,
+				latencyStr,
 				c.Request.Method,
 				c.Request.URL.Path+sign+c.Request.URL.RawQuery,
 				handlerName, // 添加处理函数名称
 				Error,
 			)
+
 			if c.Writer.Status() != http.StatusOK || len(c.Errors) > 0 {
 				logger.Error(str)
 			} else {
